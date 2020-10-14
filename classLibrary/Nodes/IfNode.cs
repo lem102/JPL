@@ -10,7 +10,7 @@ namespace JPL.classLibrary.Nodes
         {
             return "If Statement: \n" +
                 $"TestExpression: {TestExpression}\n" +
-                $"Statements: {Statements}\n" +
+                $"Statements: {string.Join("\n", Statements)}\n" +
                 $"Else: {Else}";
         }
     }

@@ -148,7 +148,15 @@ namespace JPL.compilerComponent
                 }
                 else if (tokenList[i].TokenType == TokenType.If)
                 {
-                    i = ParseIfStatement(tokenList, nestingStatus, rootNode, i);
+                    var ifNode = new IfNode();
+                    nestingStatus[nestingStatus.Count - 1].Statements.Add(ifNode);
+                    nestingStatus.Add(ifNode);
+                    i++;
+                    i = ParseIfStatement(tokenList,
+                                         nestingStatus,
+                                         rootNode,
+                                         ifNode,
+                                         i);
                 }
                 else if (tokenList[i].TokenType == TokenType.Else)
                 {
@@ -166,7 +174,36 @@ namespace JPL.compilerComponent
                         ThrowParserException(rootNode, "else statement can only occur after an if or else if statement.");
                     }
                     var parentIfNode = (IfNode)previousStatementNode;
-                    
+                    i++;
+                    while (parentIfNode.Else != null)
+                    {
+                        // TODO: Add a check here to check for rouge ElseNodes.
+                        parentIfNode = (IfNode)parentIfNode.Else;
+                    }
+                    if (tokenList[i].TokenType == TokenType.If)
+                    {
+                        // do else if stuff here
+                        var elseIfNode = new IfNode();
+                        parentIfNode.Else = elseIfNode;
+                        i++;
+                        i = ParseIfStatement(tokenList,
+                                             nestingStatus,
+                                             rootNode,
+                                             elseIfNode,
+                                             i);
+                    }
+                    else if (tokenList[i].TokenType == TokenType.OpeningBrace)
+                    {
+                        // do else stuff here
+                        var elseNode = new ElseNode();
+                        parentIfNode.Else
+                    }
+                    else
+                    {
+                        ThrowParserException(rootNode, "else token must be followed by if " +
+                                             "token incase of else if statement or opening paren " +
+                                             "in the case of a straight else statement.");
+                    }
 
                     ThrowParserException(rootNode, "not implemented");
                 }
@@ -179,12 +216,9 @@ namespace JPL.compilerComponent
         private int ParseIfStatement(List<Token> tokenList,
                                      List<ContainingNode> nestingStatus,
                                      RootNode rootNode,
+                                     IfNode ifNode,
                                      int i)
         {
-            var ifNode = new IfNode();
-            nestingStatus[nestingStatus.Count - 1].Statements.Add(ifNode);
-            nestingStatus.Add(ifNode);
-            i++;
             if (tokenList[i].TokenType != TokenType.OpeningParenthesis)
             {
                 ThrowParserException(rootNode, "Opening parenthesis expected after if token.");
@@ -370,6 +404,13 @@ namespace JPL.compilerComponent
                     ThrowParserException(rootNode,
                                          "arguments must have a identifier after their type.");
                 }
+
+                if (tokenList[i].TokenType != TokenType.IntegerDeclaration)
+                {
+                    ThrowParserException(rootNode,
+                                         "arguments must have a identifier after their type.");
+                }
+                
                 argumentNode.Identifier = tokenList[i].TokenValue;
                 i++;
                 if (tokenList[i].TokenType == TokenType.ClosingParenthesis)
